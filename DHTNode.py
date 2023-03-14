@@ -188,8 +188,13 @@ class DHTNode(threading.Thread):
         self.logger.debug("Put: %s %s", key, key_hash)
 
         #TODO Replace next code:
-        self.send(address, {"method": "NACK"})
-
+        # self.send(address, {"method": "NACK"})
+        if contains(self.predecessor_id, self.identification, key_hash):
+            self.keystore[key] = value
+            self.send(address, {"method": "ACK"})
+        else:
+            self.send(address, {"method": "NACK"})
+            
 
     def get(self, key, address):
         """Retrieve value from DHT.
@@ -202,7 +207,13 @@ class DHTNode(threading.Thread):
         self.logger.debug("Get: %s %s", key, key_hash)
 
         #TODO Replace next code:
-        self.send(address, {"method": "NACK"})
+        if not contains(self.predecessor_id, self.identification, key_hash):
+            self.send(address, {"method": "NACK"})
+        else:
+            if key in self.keystore.keys():
+                self.send(address, {"method": "ACK", "args" : self.keystore[key]})
+            else:
+                self.send(address, {"method": "NACK"})
 
 
     def run(self):
