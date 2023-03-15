@@ -3,6 +3,7 @@ import socket
 import threading
 import logging
 import pickle
+import math
 from utils import dht_hash, contains
 
 
@@ -19,6 +20,7 @@ class FingerTable:
 
     def update(self, index, node_id, node_addr):
         """Update index of table with node_id and node_addr."""
+
         pass
 
     def find(self, identification):
@@ -30,6 +32,12 @@ class FingerTable:
         pass
 
     def getIdxFromId(self, id):
+        """ Get index of finger table entry corresponding to id."""
+        for i in range(self.m_bits):
+            idx = self.id + pow(2, i)
+            if idx >  pow(2, self.m_bits): 
+                idx = idx%pow(2, self.m_bits)
+            if idx == id : return i+1        
         pass
 
     def __repr__(self):
