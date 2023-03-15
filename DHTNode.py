@@ -11,15 +11,22 @@ class FingerTable:
 
     def __init__(self, node_id, node_addr, m_bits=10):
         """ Initialize Finger Table."""
-        pass
+        self.nodeId = node_id
+        self.nodeAddr = node_addr
+        self.mBits = m_bits
+        # data structures to create the finger table itself
+        self.fingerTable = {i+1 : (node_id + 2**i+1 - 1, node_addr) for i in range(m_bits)} # or list maybe duno --> has to store the adresses
+        # also we have to fill the fingertable with the methods known
 
     def fill(self, node_id, node_addr):
         """ Fill all entries of finger_table with node_id, node_addr."""
-        pass
+        self.fingerTable = {i+1 : (node_id, node_addr) for i in range(self.mBits)}
 
     def update(self, index, node_id, node_addr):
         """Update index of table with node_id and node_addr."""
-        pass
+        for node in self.fingerTable.items():
+            if node == (node_id, node_addr):
+                self.fingerTable[index] = node
 
     def find(self, identification):
         """ Get node address of closest preceding node (in finger table) of identification. """
