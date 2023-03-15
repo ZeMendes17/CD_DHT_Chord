@@ -15,39 +15,55 @@ class FingerTable:
         self.nodeAddr = node_addr
         self.mBits = m_bits
         # data structures to create the finger table itself
-        self.fingerTable = {i+1 : (node_id + 2**i+1 - 1, node_addr) for i in range(m_bits)} # or list maybe duno --> has to store the adresses
+        self.fingerTable = {i+1 : (node_id + 2**i - 1, node_addr) for i in range(m_bits)} # or list maybe duno --> has to store the adresses
         # also we have to fill the fingertable with the methods known
 
     def fill(self, node_id, node_addr):
         """ Fill all entries of finger_table with node_id, node_addr."""
-        self.fingerTable = {i+1 : (node_id, node_addr) for i in range(self.mBits)}
+        self.fingerTable = {i+1 : (node_id + 2**i - 1, node_addr) for i in range(self.mBits)}
 
     def update(self, index, node_id, node_addr):
         """Update index of table with node_id and node_addr."""
-        for node in self.fingerTable.items():
-            if node == (node_id, node_addr):
-                self.fingerTable[index] = node
+        self.fingerTable[index] = (node_id, node_addr)
 
     def find(self, identification):
         """ Get node address of closest preceding node (in finger table) of identification. """
-        pass
+        lastKey = self.fingerTable[1][1]
+        for key in self.fingerTable.keys():
+            if self.fingerTable[key][0] < identification: lastKey = self.fingerTable[key][1]
+        return lastKey
 
     def refresh(self):
         """ Retrieve finger table entries requiring refresh."""
-        pass
+        result = []
+        for key, node in self.fingerTable.items():
+            result.append((key, (self.nodeId + 2**(key-1))%(2**self.mBits), node[1] ))
+        return result
 
     def getIdxFromId(self, id):
-        pass
+        for i in range(self.mBits):
+            idx = self.nodeId + pow(2, i)
+            if idx >  pow(2, self.mBits): 
+                idx = idx%pow(2, self.mBits)
+            if idx == id : return i+1  
+        
 
     def __repr__(self):
-        pass
+        result = "{"
+        for key, node in self.fingerTable.items():
+            result += key + ":" + node[0] + "," + node[1] + "; "
+        result += "}"
+        return result
 
     @property
     def as_list(self):
         """return the finger table as a list of tuples: (identifier, (host, port)).
         NOTE: list index 0 corresponds to finger_table index 1
         """
-        pass
+        result = []
+        for node in self.fingerTable.values():
+            result.append(node)
+        return result
 
 class DHTNode(threading.Thread):
     """ DHT Node Agent. """
