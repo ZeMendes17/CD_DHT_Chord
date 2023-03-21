@@ -95,7 +95,8 @@ class DHTNode(threading.Thread):
             self.predecessor_id = None
             self.predecessor_addr = None
 
-        self.finger_table = None    #TODO create finger_table
+        #TODO create finger_table
+        self.finger_table = FingerTable(self.identification, self.addr)
 
         self.keystore = {}  # Where all data is stored
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -131,7 +132,10 @@ class DHTNode(threading.Thread):
         if self.identification == self.successor_id:  # I'm the only node in the DHT
             self.successor_id = identification
             self.successor_addr = addr
+            
             #TODO update finger table
+            self.finger_table.update(1, identification, addr) # since it is the first onde goes to 1
+            
             args = {"successor_id": self.identification, "successor_addr": self.addr}
             self.send(addr, {"method": "JOIN_REP", "args": args})
         elif contains(self.identification, self.successor_id, identification):
@@ -141,7 +145,10 @@ class DHTNode(threading.Thread):
             }
             self.successor_id = identification
             self.successor_addr = addr
+            
             #TODO update finger table
+            self.finger_table.update(1, identification, addr) # same here
+
             self.send(addr, {"method": "JOIN_REP", "args": args})
         else:
             self.logger.debug("Find Successor(%d)", args["id"])
@@ -198,6 +205,7 @@ class DHTNode(threading.Thread):
         self.send(self.successor_addr, {"method": "NOTIFY", "args": args})
 
         # TODO refresh finger_table
+        tempList = self.finger_table.refresh() # do something prob send messages
 
     def put(self, key, value, address):
         """Store value in DHT.
@@ -262,6 +270,7 @@ class DHTNode(threading.Thread):
                     self.successor_id = args["successor_id"]
                     self.successor_addr = args["successor_addr"]
                     #TODO fill finger table
+                    self.finger_table.fill(self.successor_id, self.successor_addr)
                     self.inside_dht = True
                     self.logger.info(self)
 
