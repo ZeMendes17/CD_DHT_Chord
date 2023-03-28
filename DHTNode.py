@@ -15,12 +15,12 @@ class FingerTable:
         self.nodeAddr = node_addr
         self.mBits = m_bits
         # data structures to create the finger table itself
-        self.fingerTable = {i+1 : (node_id + 2**i - 1, node_addr) for i in range(m_bits)} # or list maybe duno --> has to store the adresses
+        self.fingerTable = {i+1 : ((node_id + 2**(i-1))%(2**m_bits), node_addr) for i in range(m_bits)} # or list maybe duno --> has to store the adresses
         # also we have to fill the fingertable with the methods known
 
     def fill(self, node_id, node_addr):
         """ Fill all entries of finger_table with node_id, node_addr."""
-        self.fingerTable = {i+1 : (node_id + 2**i - 1, node_addr) for i in range(self.mBits)}
+        self.fingerTable = {i+1 : (node_id, node_addr) for i in range(self.mBits)}
 
     def update(self, index, node_id, node_addr):
         """Update index of table with node_id and node_addr."""
@@ -28,10 +28,10 @@ class FingerTable:
 
     def find(self, identification):
         """ Get node address of closest preceding node (in finger table) of identification. """
-        lastKey = self.fingerTable[1][1]
-        for key in self.fingerTable.keys():
-            if self.fingerTable[key][0] < identification: lastKey = self.fingerTable[key][1]
-        return lastKey
+        for count in range(self.mBits, 0, -1):
+            if contains(self.nodeId, identification, self.fingerTable[count][0]) and identification != self.fingerTable[count][0]:
+                return self.fingerTable[count][1]
+        return self.fingerTable[1][1]
 
     def refresh(self):
         """ Retrieve finger table entries requiring refresh."""
@@ -244,8 +244,11 @@ class DHTNode(threading.Thread):
         #TODO Replace next code:
         # if the key must be stored in this address
         if contains(self.predecessor_id, self.identification, key_hash):
-            self.keystore[key] = value
-            self.send(address, {"method": "ACK"})
+            if key not in self.keystore:
+                self.keystore[key] = value
+                self.send(address, {"method": "ACK"})
+            else:
+                self.send(address, {"method": "NACK"})
         # if it is beetween this node and its successor, sends to its successor the key and value pair
         elif contains(self.identification, self.successor_id, key_hash):
             self.send(self.successor_addr, {"method": "PUT", "args": {"key": key, "value": value, "from": address}})
@@ -266,18 +269,18 @@ class DHTNode(threading.Thread):
         self.logger.debug("Get: %s %s", key, key_hash)
 
         #TODO Replace next code:
-        if not contains(self.predecessor_id, self.identification, key_hash):
-            addrFound = self.finger_table.find(key_hash)
-            self.send(addrFound, {"method": "GET", "args" : {"key": key, "from": address}})
-            # self.send(address, {"method": "NACK"})
-        elif contains(self.identification, self.successor_id, key_hash):
-            self.send(self.successor_addr, {"method": "GET", "args" : {"key": key, "from": address}})
-        else:
+        if contains(self.predecessor_id, self.identification, key_hash):
             if key in self.keystore.keys():
                 self.send(address, {"method": "ACK", "args": self.keystore[key]})
             else:
                 self.send(address, {"method": "NACK"})
-                # self.send(self.successor_addr, {"method": "GET", "args" : {"key": key, "from": address}})
+            # self.send(address, {"method": "NACK"})
+        elif contains(self.identification, self.successor_id, key_hash):
+            self.send(self.successor_addr, {"method": "GET", "args" : {"key": key, "from": address}})
+        else:
+            addrFound = self.finger_table.find(key_hash)
+            self.send(addrFound, {"method": "GET", "args" : {"key": key, "from": address}})
+            # self.send(self.successor_addr, {"method": "GET", "args" : {"key": key, "from": address}})
 
     def run(self):
         self.socket.bind(self.addr)
