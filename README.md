@@ -1,5 +1,7 @@
 # CHORD (DHT)
 
+Grade: 20
+
 This repository implement a simple version of the [CHORD](https://en.wikipedia.org/wiki/Chord_(peer-to-peer)) algorithm.
 The provided code already setups the ring network properly.
 1. Supports Node Joins
